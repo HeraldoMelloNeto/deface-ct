@@ -8,7 +8,7 @@ HMN Educação em Saúde · Dr. Heraldo O. Mello Neto
 
 ## Uso
 
-1. Abra o site no **Google Chrome** (computador).
+1. Abra o site no **Google Chrome** (computador). Acesse: https://glittering-platypus-0a0877.netlify.app/
 2. **Acesso:** informe o e-mail. Um código de 6 dígitos é enviado na hora e libera o processamento.
 3. **Configuração do lote:**
    - pasta de destino (recomendado: os ZIPs vão direto para o disco);
