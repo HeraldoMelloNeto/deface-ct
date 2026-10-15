@@ -51,14 +51,15 @@ HMN Educação em Saúde · Dr. Heraldo O. Mello Neto
 ## Publicação (GitHub + Netlify)
 
 1. No Netlify: *Add new site → Import an existing project* → este repositório. Não é preciso comando de build. O `netlify.toml` já define `publish = "."`, as funções e os cabeçalhos.
-2. Em *Site configuration → Environment variables*, cadastre:
-   - `CODE_SECRET`: texto aleatório com 32 caracteres ou mais.
+2. Para ativar a validação por e-mail, cadastre em *Site configuration → Environment variables*:
    - Envio pelo **Gmail**:
      - `SMTP_USER`: o endereço do Gmail.
      - `SMTP_PASS`: uma *senha de app*. Ative a verificação em duas etapas e crie a senha em <https://myaccount.google.com/apppasswords>.
      - `MAIL_FROM` (opcional): por exemplo, `Deface CT <seuemail@gmail.com>`.
      - `SMTP_HOST`/`SMTP_PORT` só são necessários fora do Gmail. O padrão é `smtp.gmail.com:465`.
    - Envio pelo **Resend** (alternativa): `RESEND_API_KEY` e `MAIL_FROM` com um domínio verificado.
+   - `CODE_SECRET` é opcional: sem ele, a função gera um segredo aleatório na primeira execução e o guarda no Netlify Blobs.
+   - Enquanto o remetente não estiver cadastrado, o site funciona normalmente e mostra um aviso de que a validação ainda não foi ativada.
 3. Faça um novo deploy (*Deploys → Trigger deploy*).
 
 Sobre o funcionamento:

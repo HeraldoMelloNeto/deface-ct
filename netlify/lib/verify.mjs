@@ -23,7 +23,17 @@ export function validEmail(e) { return e.length <= 254 && EMAIL_RE.test(e); }
 export function mailerConfigured(env) {
   return !!(env.RESEND_API_KEY || (env.SMTP_USER && env.SMTP_PASS));
 }
-export function isConfigured(env) { return !!(env.CODE_SECRET && env.CODE_SECRET.length >= 16 && mailerConfigured(env)); }
+export function isConfigured(env) { return mailerConfigured(env); }
+
+/** Segredo de assinatura: variável CODE_SECRET ou, na falta dela, um segredo gerado uma vez e guardado no Blobs. */
+export async function getSecret(store, env) {
+  if (env.CODE_SECRET && env.CODE_SECRET.length >= 16) return env.CODE_SECRET;
+  const cur = await store.get('config:secret', { type: 'json' });
+  if (cur && typeof cur.s === 'string' && cur.s.length >= 32) return cur.s;
+  const s = crypto.randomBytes(32).toString('hex');
+  await store.setJSON('config:secret', { s, created: new Date().toISOString() });
+  return s;
+}
 
 function hmac(secret, s) { return crypto.createHmac('sha256', secret).update(s).digest('hex'); }
 
@@ -83,6 +93,8 @@ export async function defaultSendMail(env, { to, subject, text, htmlBody }) {
 }
 
 export function createHandlers({ store, env, sendMail = defaultSendMail, now = () => Date.now() }) {
+  let secretP = null;
+  const secret = () => (secretP || (secretP = getSecret(store, env)));
   async function bump(key, limit) {
     const t = now();
     const r = (await store.get(key, { type: 'json' })) || { n: 0, w: t };
@@ -106,7 +118,7 @@ export function createHandlers({ store, env, sendMail = defaultSendMail, now = (
     if (!(await bump('rate:ip:' + sha(ip), MAX_SENDS_IP))) return json(429, { error: 'rate' });
     if (!(await bump('rate:email:' + sha(email), MAX_SENDS_EMAIL))) return json(429, { error: 'rate' });
     const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
-    await store.setJSON('code:' + sha(email), { h: hmac(env.CODE_SECRET, email + ':' + code), exp: now() + CODE_TTL, a: 0 });
+    await store.setJSON('code:' + sha(email), { h: hmac(await secret(), email + ':' + code), exp: now() + CODE_TTL, a: 0 });
     const tx = TEXT[lang];
     try {
       await sendMail(env, { to: email, subject: tx.subject(code), text: tx.body(code), htmlBody: html(tx.body(code), code) });
@@ -123,7 +135,7 @@ export function createHandlers({ store, env, sendMail = defaultSendMail, now = (
     let body;
     try { body = await req.json(); } catch { return json(400, { error: 'bad_request' }); }
     if (body && body.session) {
-      const s = readSession(env.CODE_SECRET, body.session, now());
+      const s = readSession(await secret(), body.session, now());
       return s ? json(200, { ok: true, email: s.e }) : json(401, { error: 'session' });
     }
     const email = normalizeEmail(body && body.email);
@@ -138,7 +150,7 @@ export function createHandlers({ store, env, sendMail = defaultSendMail, now = (
     // conta a tentativa antes de comparar (limita tentativas em paralelo)
     rec.a++;
     await store.setJSON(key, rec);
-    const exp = hmac(env.CODE_SECRET, email + ':' + code);
+    const exp = hmac(await secret(), email + ':' + code);
     const ok = typeof rec.h === 'string' && rec.h.length === exp.length && crypto.timingSafeEqual(Buffer.from(exp), Buffer.from(rec.h));
     if (!ok) {
       if (rec.a >= MAX_ATTEMPTS) await store.delete(key);
@@ -149,7 +161,7 @@ export function createHandlers({ store, env, sendMail = defaultSendMail, now = (
     const u = (await store.get(ukey, { type: 'json' })) || { email, first: new Date(now()).toISOString(), n: 0 };
     u.last = new Date(now()).toISOString(); u.n++;
     await store.setJSON(ukey, u);
-    return json(200, { ok: true, email, session: makeSession(env.CODE_SECRET, email, now()) });
+    return json(200, { ok: true, email, session: makeSession(await secret(), email, now()) });
   }
 
   return { sendCode, verifyCode };

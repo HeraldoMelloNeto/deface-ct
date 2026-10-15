@@ -70,6 +70,18 @@ const H2 = createHandlers({ store: new MemStore(), env, now: () => t, sendMail: 
 r = await j(await H2.sendCode(req('POST', { email: 'e@exemplo.com', consent: true }), { ip: '1' }));
 assert.equal(r.status, 502);
 // sem configuração
+// segredo automático (sem CODE_SECRET) também funciona
+{
+  const st2 = new MemStore(); const sent2 = [];
+  const H4 = createHandlers({ store: st2, env: { SMTP_USER: 'a@b.com', SMTP_PASS: 'p' }, now: () => t, sendMail: async (e, m) => { sent2.push(m); } });
+  await H4.sendCode(req('POST', { email: 'auto@exemplo.com', consent: true }), { ip: '5' });
+  const c = sent2[0].subject.match(/(\d{6})/)[1];
+  const r4 = await j(await H4.verifyCode(req('POST', { email: 'auto@exemplo.com', code: c })));
+  assert.equal(r4.body.ok, true);
+  const H5 = createHandlers({ store: st2, env: { SMTP_USER: 'a@b.com', SMTP_PASS: 'p' }, now: () => t });
+  const r5 = await j(await H5.verifyCode(req('POST', { session: r4.body.session })));
+  assert.equal(r5.body.ok, true, 'sessão válida após nova instância (segredo persistido)');
+}
 const H3 = createHandlers({ store: new MemStore(), env: {}, now: () => t });
 r = await j(await H3.sendCode(req('GET')));
 assert.equal(r.body.configured, false);

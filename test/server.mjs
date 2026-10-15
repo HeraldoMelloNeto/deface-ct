@@ -12,7 +12,7 @@ export function startServer({ port = 8787, mode = 'functions', root = process.cw
     async delete(k) { mem.delete(k); },
   };
   const sent = [];
-  const env = mode === 'unconfigured' ? {} : { CODE_SECRET: 'segredo-de-teste-123456789', SMTP_USER: 'x@y.z', SMTP_PASS: 'p' };
+  const env = mode === 'unconfigured' ? {} : { SMTP_USER: 'x@y.z', SMTP_PASS: 'p' };
   const H = createHandlers({ store, env, sendMail: async (e, m) => { sent.push(m); } });
   const server = http.createServer(async (req, res) => {
     try {

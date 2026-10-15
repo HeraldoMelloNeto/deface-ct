@@ -80,8 +80,8 @@ if (mode === 'functions') {
 if (mode === 'unconfigured') {
   await shot('01_unconfigured');
   const locked = await page.evaluate(() => document.querySelector('#drop').classList.contains('locked'));
-  log('bloqueado sem configuração:', locked);
-  if (!locked) errors.push('esperava bloqueio');
+  log('liberado sem e-mail configurado:', !locked);
+  if (locked) errors.push('não deveria bloquear sem e-mail configurado');
 }
 
 if (files.length && mode !== 'unconfigured') {

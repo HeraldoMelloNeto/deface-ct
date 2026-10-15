@@ -215,7 +215,7 @@ async function initAccess() {
   }
   state.access = 'need'; renderAccess();
 }
-function accessOk() { return state.access === 'verified' || state.access === 'preview'; }
+function accessOk() { return state.access === 'verified' || state.access === 'preview' || state.access === 'unconfigured'; }
 function showMsg(el, kind, text) { el.className = 'msg ' + kind; el.textContent = text; el.classList.remove('hidden'); }
 function hideMsg(el) { el.classList.add('hidden'); el.textContent = ''; }
 function renderAccess() {
