@@ -134,6 +134,31 @@ function solve(A, b) {
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
+function pickGlobe(dt, nx, ny, nz, voxVol) {
+  const n = dt.length, core = 3;
+  const lab = new Int32Array(n), stack = new Int32Array(n);
+  let cur = 0, best = { bv: 0, bi: -1 };
+  for (let s0 = 0; s0 < n; s0++) {
+    if (lab[s0] || dt[s0] < core) continue;
+    cur++;
+    let sp = 0, cnt = 0, mv = 0, mi = -1;
+    stack[sp++] = s0; lab[s0] = cur;
+    while (sp) {
+      const i = stack[--sp]; cnt++;
+      if (dt[i] > mv) { mv = dt[i]; mi = i; }
+      const x = i % nx, y = ((i / nx) | 0) % ny, z = (i / (nx * ny)) | 0;
+      const nb = [x > 0 ? i - 1 : -1, x < nx - 1 ? i + 1 : -1, y > 0 ? i - nx : -1, y < ny - 1 ? i + nx : -1, z > 0 ? i - nx * ny : -1, z < nz - 1 ? i + nx * ny : -1];
+      for (const j of nb) if (j >= 0 && !lab[j] && dt[j] >= core) { lab[j] = cur; stack[sp++] = j; }
+    }
+    if (mv < 6.5 || mv > 16) continue;
+    const expected = (4 / 3) * Math.PI * Math.pow(mv - core + 1, 3);
+    const ratio = (cnt * voxVol) / expected;
+    if (ratio > 5) continue; // massa alongada/irregular, não é globo
+    if (mv > best.bv) best = { bv: mv, bi: mi };
+  }
+  return best;
+}
+
 function boxBlur3(a, nx, ny, nz) {
   const t1 = new Float32Array(a.length), t2 = new Float32Array(a.length), out = new Float32Array(a.length);
   for (let z = 0; z < nz; z++) for (let y = 0; y < ny; y++) {
@@ -289,9 +314,10 @@ function detectLandmarks(V, S, bone, notes) {
       }
     }
     const dt = edt3d(m, bx, by, bz, sx, sy, sz);
-    let bv = 0, bi = -1;
-    for (let i = 0; i < dt.length; i++) if (dt[i] > bv) { bv = dt[i]; bi = i; }
-    if (bi < 0 || bv < 6.5 || bv > 16) { eyes.push(null); continue; }
+    // componentes do "núcleo" (EDT ≥ 3 mm): cada um é candidato a globo; escolhe o maior que seja
+    // compatível com uma esfera de raio 6,5–16 mm (descarta massas grandes de partes moles)
+    const { bv, bi } = pickGlobe(dt, bx, by, bz, sx * sy * sz);
+    if (bi < 0) { eyes.push(null); continue; }
     const ex = bi % bx, ey = Math.floor(bi / bx) % by, ez = Math.floor(bi / (bx * by));
     eyes.push({ x: xa + ex, y: yMin + ey, z: zA + ez, r: bv });
   }
