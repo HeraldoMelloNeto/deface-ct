@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="color-scheme" content="dark light">
+<meta name="description" content="Deface CT — desidentificação facial de TC de crânio, 100% no navegador.">
+<title>Deface CT</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230969da'/%3E%3Cpath d='M20 18h12a14 14 0 0 1 0 28H20z' fill='none' stroke='white' stroke-width='6'/%3E%3C/svg%3E">
+<script>
+(function () {
+  var t = 'auto';
+  try { t = localStorage.getItem('deface.theme') || 'auto'; } catch (e) {}
+  var dark = t === 'dark' || (t === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme-pref', t);
+})();
+</script>
+<style>
+:root {
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --radius: 12px;
+}
+:root, :root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f4f6f9; --surface: #ffffff; --surface-2: #f2f5f8; --surface-3: #e8edf2; --border: #d3dae2;
+  --text: #1b2129; --muted: #4f5b67; --faint: #5f6b77;
+  --accent: #0a5cc2; --accent-strong: #0a5cc2; --on-accent: #ffffff;
+  --ok: #18692f; --ok-bg: #e7f5ea; --warn: #7d5300; --warn-bg: #fff4d6; --err: #b3121f; --err-bg: #fde8ea;
+  --info-bg: #e8f1fd; --shadow: 0 1px 2px rgba(16,24,40,.06), 0 6px 18px rgba(16,24,40,.06);
+  --canvas-bg: #e9eef3; --focus: #0a5cc2; --bar: #dfe5eb; --bar-fill: #0a5cc2;
+  --drop: #f7f9fc; --drop-hover: #e8f1fd;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  color-scheme: dark;
+  --bg: #0d1117; --surface: #151b23; --surface-2: #1c2430; --surface-3: #232d3b; --border: #2f3a48;
+  --text: #e6edf3; --muted: #a3b0bd; --faint: #8b98a5;
+  --accent: #6cb6ff; --accent-strong: #1f6feb; --on-accent: #ffffff;
+  --ok: #56d364; --ok-bg: #12261a; --warn: #e3b341; --warn-bg: #2b2210; --err: #ff7b72; --err-bg: #2d1416;
+  --info-bg: #10233d; --shadow: 0 1px 0 rgba(255,255,255,.03), 0 8px 24px rgba(0,0,0,.25);
+  --canvas-bg: #0b0f15; --focus: #6cb6ff; --bar: #2f3a48; --bar-fill: #3d8bfd;
+  --drop: #121a24; --drop-hover: #15253a;
+} }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d1117; --surface: #151b23; --surface-2: #1c2430; --surface-3: #232d3b; --border: #2f3a48;
+  --text: #e6edf3; --muted: #a3b0bd; --faint: #8b98a5;
+  --accent: #6cb6ff; --accent-strong: #1f6feb; --on-accent: #ffffff;
+  --ok: #56d364; --ok-bg: #12261a; --warn: #e3b341; --warn-bg: #2b2210; --err: #ff7b72; --err-bg: #2d1416;
+  --info-bg: #10233d; --shadow: 0 1px 0 rgba(255,255,255,.03), 0 8px 24px rgba(0,0,0,.25);
+  --canvas-bg: #0b0f15; --focus: #6cb6ff; --bar: #2f3a48; --bar-fill: #3d8bfd;
+  --drop: #121a24; --drop-hover: #15253a;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--font); -webkit-font-smoothing: antialiased; }
+a { color: var(--accent); }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* topo */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+.top .wrap { display: flex; align-items: center; gap: 16px; padding-block: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; margin-right: auto; min-width: 0; }
+.mark { width: 40px; height: 40px; border-radius: 10px; background: var(--accent-strong); display: grid; place-items: center; flex: none; }
+.mark svg { width: 24px; height: 24px; }
+.brand h1 { margin: 0; font-size: 20px; line-height: 1.2; letter-spacing: -.01em; }
+.brand p { margin: 0; color: var(--muted); font-size: 13px; }
+.controls-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; background: var(--ok-bg); color: var(--ok); border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent); white-space: nowrap; }
+.pill .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; background: transparent; padding: 6px 10px; font-size: 13px; cursor: pointer; color: var(--muted); }
+.seg button + button { border-left: 1px solid var(--border); }
+.seg button[aria-pressed="true"] { background: var(--accent-strong); color: var(--on-accent); }
+.seg button:hover:not([aria-pressed="true"]) { background: var(--surface-2); color: var(--text); }
+
+/* faixas de aviso */
+.banners { display: grid; gap: 10px; margin: 18px 0 6px; }
+.banner { display: flex; gap: 14px; align-items: flex-start; padding: 14px 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); box-shadow: var(--shadow); }
+.banner svg { flex: none; width: 26px; height: 26px; margin-top: 1px; }
+.banner.privacy { border-color: color-mix(in srgb, var(--ok) 45%, var(--border)); background: var(--ok-bg); }
+.banner.privacy svg { color: var(--ok); }
+.banner.privacy strong { color: var(--ok); }
+.banner.chrome { background: var(--info-bg); border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); }
+.banner.chrome svg { color: var(--accent); }
+.banner.chrome.warn { background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 45%, var(--border)); }
+.banner.chrome.warn svg, .banner.chrome.warn strong { color: var(--warn); }
+.banner p { margin: 0; }
+.banner .sub { color: var(--muted); font-size: 14px; margin-top: 2px; }
+
+/* cartões */
+main { display: grid; gap: 16px; padding: 12px 0 28px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 20px 20px; min-width: 0; }
+.card h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; font-size: 16px; letter-spacing: .01em; }
+.card h2 .n { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; background: var(--surface-3); color: var(--text); flex: none; }
+.card h2 .right { margin-left: auto; font-size: 13px; font-weight: 500; color: var(--muted); }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); padding: 8px 14px; cursor: pointer; font-weight: 600; font-size: 14px; white-space: nowrap; min-height: 38px; }
+.btn:hover:not(:disabled) { background: var(--surface-3); }
+.btn.primary { background: var(--accent-strong); border-color: var(--accent-strong); color: var(--on-accent); }
+.btn.primary:hover:not(:disabled) { filter: brightness(1.08); background: var(--accent-strong); }
+.btn.danger { color: var(--err); }
+.btn.ghost { background: transparent; }
+.btn.sm { padding: 4px 10px; min-height: 30px; font-size: 13px; }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.btn svg { width: 16px; height: 16px; }
+
+label.field { display: grid; gap: 6px; font-weight: 600; font-size: 14px; }
+input[type=email], input[type=text], select { background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 8px 12px; min-height: 40px; width: 100%; }
+input::placeholder { color: var(--faint); opacity: 1; }
+input.code { font-family: var(--mono); font-size: 22px; letter-spacing: .4em; text-align: center; max-width: 220px; }
+.check { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; cursor: pointer; }
+.check input { margin-top: 3px; width: 17px; height: 17px; accent-color: var(--accent-strong); flex: none; }
+.check .hint { display: block; color: var(--muted); font-size: 13px; font-weight: 400; }
+fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; min-width: 0; }
+legend { font-weight: 600; font-size: 14px; margin-bottom: 6px; padding: 0; }
+
+.msg { padding: 10px 12px; border-radius: 9px; font-size: 14px; margin-top: 10px; border: 1px solid transparent; }
+.msg.err { background: var(--err-bg); color: var(--err); border-color: color-mix(in srgb, var(--err) 35%, transparent); }
+.msg.ok { background: var(--ok-bg); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+.msg.warn { background: var(--warn-bg); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
+.msg.info { background: var(--info-bg); color: var(--text); border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+.hidden { display: none !important; }
+
+.access-box { display: grid; gap: 12px; max-width: 640px; }
+.verified-line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.verified-line .ok-ico { color: var(--ok); width: 22px; height: 22px; }
+
+.dest { display: grid; gap: 8px; }
+.dest .path { font-family: var(--mono); font-size: 13px; padding: 4px 8px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border); }
+
+/* área de soltar */
+.drop { border: 2px dashed var(--border); border-radius: var(--radius); background: var(--drop); padding: 26px 16px; text-align: center; cursor: pointer; transition: background .15s, border-color .15s; }
+.drop:hover, .drop.over { background: var(--drop-hover); border-color: var(--accent); }
+.drop svg { width: 34px; height: 34px; color: var(--accent); }
+.drop .t { font-weight: 700; font-size: 16px; margin-top: 6px; }
+.drop .s { color: var(--muted); font-size: 13px; }
+.drop.locked { opacity: .6; cursor: not-allowed; }
+
+.toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 14px 0 10px; }
+.toolbar .spacer { margin-left: auto; }
+.overall { display: grid; gap: 6px; margin-bottom: 12px; }
+.bar { height: 8px; border-radius: 99px; background: var(--bar); overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--bar-fill); border-radius: 99px; transition: width .2s; }
+@media (prefers-reduced-motion: reduce) { .bar > i, .drop { transition: none; } }
+.bar.sm { height: 5px; }
+
+.tablewrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; }
+table { width: 100%; min-width: 900px; border-collapse: collapse; font-size: 13.5px; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { background: var(--surface-2); color: var(--muted); font-weight: 600; font-size: 12.5px; white-space: nowrap; position: sticky; top: 0; }
+tbody:last-of-type tr:last-child td { border-bottom: 0; }
+td.num { color: var(--muted); font-variant-numeric: tabular-nums; width: 36px; }
+td .fname { font-weight: 600; overflow-wrap: anywhere; min-width: 130px; }
+td .meta { color: var(--muted); font-size: 12.5px; }
+.chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 99px; font-size: 12px; font-weight: 600; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); white-space: nowrap; }
+.chip.ok { background: var(--ok-bg); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+.chip.warn { background: var(--warn-bg); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
+.chip.err { background: var(--err-bg); color: var(--err); border-color: color-mix(in srgb, var(--err) 35%, transparent); }
+.chip.run { background: var(--info-bg); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.structs { display: flex; gap: 4px; flex-wrap: wrap; }
+.st-detail { margin-top: 4px; font-size: 12.5px; color: var(--muted); }
+.st-detail.err { color: var(--err); }
+.st-detail.warn { color: var(--warn); }
+.thumb { width: 44px; height: 44px; border-radius: 8px; background: var(--canvas-bg); border: 1px solid var(--border); object-fit: cover; display: block; }
+.empty { text-align: center; color: var(--muted); padding: 22px; }
+.outname { font-family: var(--mono); font-size: 12.5px; }
+
+/* visualizador */
+.viewer-head { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; margin-bottom: 12px; }
+.viewer-head label.field { min-width: 260px; flex: 1; }
+.views { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 700px) { .views { grid-template-columns: 1fr; } }
+.view { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px; min-width: 0; }
+.view h3 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.view h3.after { color: var(--ok); }
+.cv { width: 100%; aspect-ratio: 1 / 1; display: block; border-radius: 8px; background: var(--canvas-bg); touch-action: none; cursor: grab; image-rendering: auto; }
+.cv.low { image-rendering: auto; }
+.cv:active { cursor: grabbing; }
+.rot { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+.rot input[type=range] { flex: 1; min-width: 140px; accent-color: var(--accent-strong); }
+.rot .val { font-variant-numeric: tabular-nums; min-width: 44px; text-align: right; color: var(--muted); font-size: 13px; }
+.qc { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+@media (max-width: 860px) { .qc { grid-template-columns: 1fr 1fr; } }
+.qc figure { margin: 0; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 8px; }
+.qc canvas { width: 100%; display: block; border-radius: 6px; background: #000; }
+.qc figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.lm { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+/* download */
+.dl { display: grid; gap: 12px; }
+.dl .big { font-size: 15px; }
+
+footer { border-top: 1px solid var(--border); color: var(--muted); font-size: 13px; }
+footer .wrap { display: flex; gap: 12px; flex-wrap: wrap; justify-content: space-between; padding-block: 16px 22px; }
+footer .sig { color: var(--faint); letter-spacing: .02em; }
+footer .sig b { color: var(--muted); font-weight: 600; }
+
+dialog { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--text); padding: 0; width: min(720px, calc(100vw - 32px)); box-shadow: 0 20px 60px rgba(0,0,0,.45); }
+dialog::backdrop { background: rgba(0,0,0,.55); }
+dialog .dhead { padding: 18px 20px 6px; }
+dialog .dhead h3 { margin: 0 0 4px; font-size: 17px; }
+dialog .dbody { padding: 8px 20px; max-height: 60vh; overflow: auto; display: grid; gap: 10px; }
+dialog .dfoot { padding: 12px 20px 18px; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+.apr { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--surface-2); display: grid; gap: 6px; }
+.apr .opts { display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; }
+.apr .opts label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+.apr .opts input { accent-color: var(--accent-strong); }
+
+#toast { position: fixed; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 50; display: grid; gap: 8px; width: min(560px, calc(100vw - 32px)); pointer-events: none; }
+#toast .t { background: var(--surface-3); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; box-shadow: var(--shadow); font-size: 14px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <div class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="6"/><path d="M6.5 13.5c1.6 2 3.4 3 5.5 3s3.9-1 5.5-3"/><path d="M4 21h16"/><path d="M3 10h18" stroke-dasharray="2 2.5"/></svg></div>
+      <div><h1>Deface CT</h1><p data-i18n="subtitle">Desidentificação facial de TC de crânio</p></div>
+    </div>
+    <div class="controls-top">
+      <span class="pill" id="localPill"><span class="dot"></span><span data-i18n="localPill">Processamento 100% local</span></span>
+      <div class="seg" role="group" id="langSeg" data-i18n-aria="langLabel" aria-label="Idioma">
+        <button type="button" data-lang="pt" aria-pressed="true">PT</button><button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+      <div class="seg" role="group" id="themeSeg" data-i18n-aria="themeLabel" aria-label="Tema">
+        <button type="button" data-theme-btn="light" aria-pressed="false" data-i18n="themeLight">Claro</button><button type="button" data-theme-btn="dark" aria-pressed="false" data-i18n="themeDark">Escuro</button><button type="button" data-theme-btn="auto" aria-pressed="false" data-i18n="themeAuto">Auto</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="banners">
+    <div class="banner privacy" role="note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.4-8 9-4.6-.6-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>
+      <div><p><strong data-i18n="privacyTitle">Seus exames não saem deste dispositivo.</strong> <span data-i18n="privacyText"></span></p><p class="sub" data-i18n="privacyEmail"></p></div>
+    </div>
+    <div class="banner chrome" id="chromeBanner" role="note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/><path d="M12 8.5h8.2M8.9 13.8L4.8 6.7M15 13.8l-4.1 7.1"/></svg>
+      <div><p><strong id="chromeTitle" data-i18n="chromeTitle">Use o Google Chrome (computador).</strong> <span id="chromeText" data-i18n="chromeText"></span></p></div>
+    </div>
+  </div>
+
+  <main>
+    <!-- 1 · Acesso -->
+    <section class="card" id="cardAccess" aria-labelledby="h1acc">
+      <h2 id="h1acc"><span class="n">1</span><span data-i18n="step1">Acesso</span></h2>
+      <div id="accChecking" class="muted" data-i18n="accessChecking">Verificando…</div>
+      <div id="accNeed" class="access-box hidden">
+        <p class="muted" style="margin:0" data-i18n="accessIntro"></p>
+        <label class="field"><span data-i18n="emailLabel">E-mail</span><input type="email" id="email" autocomplete="email" inputmode="email" data-i18n-ph="emailPh" maxlength="254"></label>
+        <label class="check"><input type="checkbox" id="consent"><span data-i18n="consent"></span></label>
+        <div class="row"><button type="button" class="btn primary" id="btnSend" data-i18n="sendCode">Enviar código</button></div>
+        <div id="accMsg1" class="msg hidden" role="alert"></div>
+      </div>
+      <div id="accCode" class="access-box hidden">
+        <p style="margin:0"><span data-i18n="codeSentTo">Código enviado para</span> <strong id="sentTo"></strong></p>
+        <label class="field"><span data-i18n="codeLabel">Código</span><input type="text" id="code" class="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" data-i18n-ph="codePh"></label>
+        <div class="row">
+          <button type="button" class="btn primary" id="btnVerify" data-i18n="verify">Verificar</button>
+          <button type="button" class="btn" id="btnResend" data-i18n="resend">Reenviar</button>
+          <button type="button" class="btn ghost" id="btnChange" data-i18n="changeEmail">Trocar e-mail</button>
+        </div>
+        <p class="muted small" style="margin:0" data-i18n="checkSpam"></p>
+        <div id="accMsg2" class="msg hidden" role="alert"></div>
+      </div>
+      <div id="accVerified" class="verified-line hidden">
+        <svg class="ok-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.8"/></svg>
+        <strong data-i18n="verified">Acesso validado</strong><span class="muted" id="verEmail"></span>
+        <button type="button" class="btn sm ghost" id="btnLogout" data-i18n="logout">Sair</button>
+      </div>
+      <div id="accPreview" class="msg info hidden" data-i18n="previewMode"></div>
+      <div id="accUnconf" class="msg warn hidden" data-i18n="unconfigured"></div>
+    </section>
+
+    <!-- 2 · Configuração -->
+    <section class="card" id="cardSettings" aria-labelledby="h2set">
+      <h2 id="h2set"><span class="n">2</span><span data-i18n="step2">Configuração do lote</span></h2>
+      <div class="grid2">
+        <div class="dest">
+          <div style="font-weight:600;font-size:14px" data-i18n="destLabel">Pasta de destino</div>
+          <div class="row"><button type="button" class="btn" id="btnDest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span data-i18n="destPick">Escolher pasta…</span></button></div>
+          <div id="destInfo" class="muted small" data-i18n="destNone"></div>
+          <fieldset style="margin-top:8px">
+            <legend data-i18n="namingLabel">Nome das pastas</legend>
+            <label class="check"><input type="radio" name="naming" value="code" checked><span data-i18n="namingCode"></span></label>
+            <label class="check"><input type="radio" name="naming" value="acc"><span data-i18n="namingAcc"></span></label>
+          </fieldset>
+        </div>
+        <div style="display:grid;gap:14px;align-content:start">
+          <label class="check"><input type="checkbox" id="optAnon" checked><span><span data-i18n="anonLabel"></span><span class="hint" data-i18n="anonHint"></span></span></label>
+          <label class="check"><input type="checkbox" id="optCsv"><span><span data-i18n="csvLabel"></span><span class="hint" data-i18n="csvHint"></span></span></label>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 · Exames -->
+    <section class="card" id="cardQueue" aria-labelledby="h3ex">
+      <h2 id="h3ex"><span class="n">3</span><span data-i18n="step3">Exames</span><span class="right" id="parallelInfo"></span></h2>
+      <div class="drop" id="drop" tabindex="0" role="button" aria-describedby="dropSub">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+        <div class="t" data-i18n="dropTitle">Arraste aqui os ZIPs</div>
+        <div class="s" id="dropSub" data-i18n="dropSub"></div>
+        <input type="file" id="fileInput" accept=".zip,application/zip,application/x-zip-compressed" multiple class="hidden">
+      </div>
+      <div id="lockedHint" class="msg warn hidden" data-i18n="lockedHint"></div>
+      <div id="storageMsg" class="msg warn hidden" role="status"></div>
+      <div class="toolbar">
+        <button type="button" class="btn primary" id="btnStart" disabled><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5v14l12-7z"/></svg><span data-i18n="start">Iniciar processamento</span></button>
+        <button type="button" class="btn" id="btnPause" disabled data-i18n="pause">Pausar</button>
+        <button type="button" class="btn danger" id="btnCancel" disabled data-i18n="cancel">Cancelar</button>
+        <button type="button" class="btn hidden" id="btnRetry" data-i18n="retry">Reprocessar com erro</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn ghost" id="btnClear" disabled data-i18n="clear">Limpar lista</button>
+      </div>
+      <div class="overall" id="overall">
+        <div class="bar"><i id="overallBar"></i></div>
+        <div class="row small muted" style="justify-content:space-between"><span id="overallText"></span><span id="etaText"></span></div>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr>
+            <th>#</th><th data-i18n="colFile">Arquivo</th><th data-i18n="colSeries">Série escolhida</th><th data-i18n="colStructs">Estruturas</th><th data-i18n="colStatus">Situação</th><th data-i18n="colOut">Saída</th><th><span class="sr" data-i18n="colActions">Ações</span></th>
+          </tr></thead>
+          <tbody id="emptyBody"><tr><td colspan="7" class="empty" data-i18n="emptyQueue">Nenhum exame na lista.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 4 · Conferência -->
+    <section class="card" id="cardViewer" aria-labelledby="h4vw">
+      <h2 id="h4vw"><span class="n">4</span><span data-i18n="step4">Conferência visual</span></h2>
+      <div id="viewerEmpty" class="muted" data-i18n="viewerEmpty"></div>
+      <div id="viewerBody" class="hidden">
+        <div class="viewer-head">
+          <label class="field"><span data-i18n="viewerExam">Exame</span><select id="viewerSelect"></select></label>
+        </div>
+        <div class="views">
+          <div class="view"><h3 data-i18n="original">Original</h3><canvas class="cv" id="cvBefore" width="420" height="420" data-i18n-aria="original" aria-label="Original"></canvas></div>
+          <div class="view"><h3 class="after" data-i18n="defaced">Desidentificado</h3><canvas class="cv" id="cvAfter" width="420" height="420" data-i18n-aria="defaced" aria-label="Desidentificado"></canvas><div id="noAfter" class="msg warn hidden" data-i18n="noAfter"></div></div>
+        </div>
+        <div class="rot">
+          <button type="button" class="btn" id="rotL" data-i18n-title="rotLeft" title="Girar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.6"/><path d="M4 4v4h4"/></svg><span class="sr" data-i18n="rotLeft"></span></button>
+          <button type="button" class="btn" id="rotFront" data-i18n="front">Frente</button>
+          <button type="button" class="btn" id="rotR" data-i18n-title="rotRight" title="Girar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4h-4"/></svg><span class="sr" data-i18n="rotRight"></span></button>
+          <label class="small muted" for="yaw" data-i18n="yaw">Rotação</label><input type="range" id="yaw" min="-80" max="80" step="1" value="0"><span class="val" id="yawVal">0°</span>
+          <label class="small muted" for="pitch" data-i18n="pitch">Inclinação</label><input type="range" id="pitch" min="-30" max="30" step="1" value="0"><span class="val" id="pitchVal">0°</span>
+        </div>
+        <p class="muted small" style="margin:8px 0 0" data-i18n="hold"></p>
+        <div class="lm" id="lmChips"></div>
+        <h3 class="small muted" style="margin:16px 0 0;text-transform:uppercase;letter-spacing:.06em" data-i18n="qcTitle">Cortes de controle</h3>
+        <div class="qc">
+          <figure><canvas id="qcSagB"></canvas><figcaption><span data-i18n="original"></span> · <span data-i18n="qcSag"></span></figcaption></figure>
+          <figure><canvas id="qcSagA"></canvas><figcaption><span data-i18n="defaced"></span> · <span data-i18n="qcSag"></span></figcaption></figure>
+          <figure><canvas id="qcAxB"></canvas><figcaption><span data-i18n="original"></span> · <span data-i18n="qcAx"></span></figcaption></figure>
+          <figure><canvas id="qcAxA"></canvas><figcaption><span data-i18n="defaced"></span> · <span data-i18n="qcAx"></span></figcaption></figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 · Download -->
+    <section class="card" id="cardDownload" aria-labelledby="h5dl">
+      <h2 id="h5dl"><span class="n">5</span><span data-i18n="step5">Download</span></h2>
+      <div class="dl">
+        <p class="big" style="margin:0" data-i18n="dlTitle"></p>
+        <div class="muted small" id="dlCounts"></div>
+        <div class="row">
+          <button type="button" class="btn primary" id="btnDlAll" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12"/><path d="M7 11l5 5 5-5"/><path d="M4 20h16"/></svg><span data-i18n="dlAll">Baixar tudo (ZIP único)</span></button>
+          <button type="button" class="btn hidden" id="btnDlCsv" disabled data-i18n="dlCsv">Baixar tabela CSV</button>
+        </div>
+        <div class="overall hidden" id="dlProg"><div class="bar"><i id="dlBar"></i></div><div class="small muted" id="dlText"></div></div>
+        <div id="dlMsg" class="msg hidden" role="status"></div>
+        <div id="dlPreview" class="msg info hidden" data-i18n="dlPreviewHost"></div>
+        <p class="muted small hidden" id="csvNote" style="margin:0" data-i18n="csvNote"></p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span class="sig"><b>HMN Educação em Saúde</b> · Dr. Heraldo O. Mello Neto</span>
+    <span><span data-i18n="footerTool"></span> · Deface CT v1.4</span>
+  </div>
+</footer>
+
+<dialog id="dlgApprove" aria-labelledby="apTitle">
+  <div class="dhead"><h3 id="apTitle" data-i18n="approveTitle">Antes de baixar</h3><p class="muted small" style="margin:0" data-i18n="approveText"></p></div>
+  <div class="dbody" id="apList"></div>
+  <div class="dfoot"><button type="button" class="btn" id="apCancel" data-i18n="approveCancel">Voltar</button><button type="button" class="btn primary" id="apGo" data-i18n="approveGo">Confirmar e baixar</button></div>
+</dialog>
+<dialog id="dlgConfirm" aria-labelledby="cfText">
+  <div class="dhead"><h3 id="cfText"></h3></div>
+  <div class="dfoot"><button type="button" class="btn" id="cfNo"></button><button type="button" class="btn primary" id="cfYes"></button></div>
+</dialog>
+<div id="toast" aria-live="polite"></div>
+<!--WORKERS-->
+<!--APP-->
+</body>
+</html>
