@@ -6,6 +6,15 @@ Desidentificação facial de TC de crânio no navegador. Recebe lotes de até **
 
 HMN Educação em Saúde · Dr. Heraldo O. Mello Neto
 
+<img width="1075" height="618" alt="image" src="https://github.com/user-attachments/assets/a7b5bb36-0b51-48b5-b720-cd2f680dfdd4" />
+<img width="1110" height="635" alt="image" src="https://github.com/user-attachments/assets/b7a87c3b-00b0-462c-a622-730221e273de" />
+<img width="1113" height="627" alt="image" src="https://github.com/user-attachments/assets/60f7db6c-0757-4788-8c18-71bc87dd880c" />
+<img width="1122" height="339" alt="image" src="https://github.com/user-attachments/assets/1c979d5c-6d84-41fc-b1b3-5be5ae3a10e1" />
+
+## Desidentificação facial sem prejuízo de perda de estruturas corporais.
+Deface CT que restringe-se à superfície facial, sem perda das estruturas abaixo do plano da pele.
+Embaralhamento de ✓ Olhos ✓ Nariz ✓ Boca ✓ Mento
+
 ## Uso
 
 1. Abra o site no **Google Chrome** (computador). Acesse: https://glittering-platypus-0a0877.netlify.app/
